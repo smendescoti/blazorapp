@@ -1,0 +1,97 @@
+﻿@page "/admin/cadastrar-estoques"
+
+@using BlazorApp.Web.Services
+@using BlazorApp.Web.Pages.Components
+@using System.Net.Http.Headers
+
+@inject HttpClient Http
+@inject IConfiguration Configuration
+@inject AuthService Auth
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body">
+                <h2>Cadastro de Estoques</h2>
+                <p>Preencha o formulário para incluir um estoque.</p>
+                <hr/>
+
+                <Loading IsLoading="@isLoading">
+                    <div class="mb-3">
+                        <strong class="text-success">@mensagemSucesso</strong>
+                        <strong class="text-danger">@mensagemErro</strong>
+                    </div>
+                </Loading>
+
+                <EditForm Model="@request" OnValidSubmit="@OnSubmit">
+
+                    <DataAnnotationsValidator/>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label>Nome do Estoque:</label>
+                            <InputText class="form-control" @bind-Value="request.Nome"/>
+                            <span class="text-danger">
+                                <ValidationMessage For="@(() => request.Nome)"/>
+                            </span>
+                        </div>
+                        <div class="col-md-6">
+                            <label>Descrição do estoque:</label>
+                            <InputTextArea class="form-control" @bind-Value="request.Descricao"/>
+                            <span class="text-danger">
+                                <ValidationMessage For="@(() => request.Descricao)" />
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <input type="submit" class="btn btn-primary" value="Realizar Cadastro"/>
+                        </div>
+                    </div>
+
+                </EditForm>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private CadastrarEstoquesRequest request = new CadastrarEstoquesRequest();
+    private bool isLoading = false;
+
+    private string mensagemSucesso;
+    private string mensagemErro;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Auth.Authorize(true);
+
+        var data = await Auth.GetData();
+        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", data.AccessToken);
+    }
+
+    private async Task OnSubmit()
+    {
+        isLoading = true;
+
+        mensagemSucesso = string.Empty;
+        mensagemErro = string.Empty;
+
+        var requestUri = Configuration["EstoqueApp"] + "/estoques";
+
+        var response = await Http.PostAsJsonAsync("Contas", request);
+        if(response.IsSuccessStatusCode)
+        {
+            mensagemSucesso = "Estoque cadastrado com sucesso.";
+            request = new CadastrarEstoquesRequest();
+        }
+        else
+        {
+            mensagemErro = "Falha ao cadastrar o estoque.";
+        }
+
+        isLoading = false;
+    }
+}

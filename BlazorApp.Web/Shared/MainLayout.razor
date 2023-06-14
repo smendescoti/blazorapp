@@ -1,0 +1,68 @@
+﻿@inherits LayoutComponentBase
+
+@using BlazorApp.Web.Services
+
+@inject AuthService Auth
+@inject NavigationManager Navigation
+@inject IJSRuntime JsRuntime
+
+<div class="page">
+
+    <div class="sidebar">
+        <NavMenu />
+    </div>
+
+    <main>
+
+        <div class="top-row px-4">
+            @if (isAuthenticated)
+            {
+                <div class="me-3">
+                    <span class="oi oi-person me-2" aria-hidden="true"></span> @usuario
+                </div>
+
+                <button @onclick="Logout"
+                    class="btn btn-sm btn-secondary">
+                    Sair do Sistema
+                </button>
+            }
+        </div>
+
+        <article class="content px-4">
+            @Body
+        </article>
+
+    </main>
+</div>
+
+@code {
+
+    private bool isAuthenticated = false;
+    private string usuario;
+
+    //função executada sempre que o componente for inicializado
+    protected override async Task OnInitializedAsync()
+    {
+        //verificar se o usuário está autenticado
+        isAuthenticated = await Auth.IsSigningIn();
+
+        //capturar os dados do usuário
+        if (isAuthenticated)
+        {
+            var data = await Auth.GetData();
+            usuario = data.Nome;
+        }
+    }
+
+    //função para logout do usuário
+    private async Task Logout()
+    {
+        bool confirmed = await JsRuntime.InvokeAsync<bool>("confirm", "Deseja realmente sair do sistema?");
+
+        if (confirmed)
+        {
+            await Auth.SignOut();
+            Navigation.NavigateTo("/", true);
+        }
+    }
+}

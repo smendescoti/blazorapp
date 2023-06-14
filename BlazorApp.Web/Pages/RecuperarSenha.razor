@@ -1,0 +1,102 @@
+﻿@** Define a rota do componente *@
+@page "/recuperar-senha"
+
+@using BlazorApp.Web.Services
+
+@inject HttpClient Http
+@inject IConfiguration Configuration
+@inject AuthService Auth
+
+<div class="row">
+    <div class="col-md-6 offset-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="text-center">
+                    <h2>Recuperar Senha</h2>
+                    <p>Preencha os campos para recuperar sua senha.</p>
+                </div>
+                <hr />
+
+                <div class="text-center mb-2">
+                    <Loading IsLoading="isLoading">
+                        <strong class="text-success">@mensagemSucesso</strong>
+                        <strong class="text-danger">@mensagemErro</strong>
+                    </Loading>
+                </div>
+
+                @** Componente para criação de formulários *@
+                <EditForm Model="@request" OnValidSubmit="@OnSubmit">
+
+                    @** Componente para ativar as validações baseadas em DataAnnotations *@
+                    <DataAnnotationsValidator />
+
+                    <div class="mb-2">
+                        <label>Email de acesso:</label>
+                        <InputText class="form-control" @bind-Value="request.Email" />
+                        <span class="text-danger">
+                            <ValidationMessage For="@(() => request.Email)" />
+                        </span>
+                    </div>
+
+                    <div class="mb-2">
+                        <div class="d-grid">
+                            <input type="submit" class="btn btn-primary" value="Confirmar" />
+                        </div>
+                    </div>
+
+                    <div class="mb-2">
+                        <div class="d-grid">
+                            <NavLink class="btn btn-light" href="">
+                                Já possui conta? <strong>Acesse aqui!</strong>
+                            </NavLink>
+                        </div>
+                    </div>
+
+                </EditForm>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+@** Codigo C# do componente *@
+@code {
+    //declarar o objeto que será utilizado para capturar o formulário
+    private RecuperarSenhaRequest request = new RecuperarSenhaRequest();
+
+    private string mensagemSucesso = string.Empty;
+    private string mensagemErro = string.Empty;
+
+    private bool isLoading;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Auth.Authorize(false);
+    }
+
+    //método para capturar o evento de submit do formulário
+    protected async Task OnSubmit()
+    {
+        isLoading = true;
+
+        mensagemSucesso = string.Empty;
+        mensagemErro = string.Empty;
+
+        var requestUri = Configuration["UsuariosApp"] + "/usuarios/recuperar-senha";
+
+        var response = await Http.PostAsJsonAsync(requestUri, request);
+        var content = await response.Content.ReadFromJsonAsync<RecuperarSenhaResponse>();
+
+        if (response.IsSuccessStatusCode)
+        {
+            mensagemSucesso = content.Message;
+            request = new RecuperarSenhaRequest();
+        }
+        else
+        {
+            mensagemErro = content.Message;
+        }
+
+        isLoading = false;
+    }
+}

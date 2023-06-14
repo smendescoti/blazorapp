@@ -1,0 +1,123 @@
+﻿@page "/admin/consultar-estoques"
+
+@using BlazorApp.Web.Services
+@using System.Net.Http.Headers
+
+@inject HttpClient Http
+@inject IConfiguration Configuration
+@inject AuthService Auth
+@inject IJSRuntime JsRuntime
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body">
+                <h2>Consulta de Estoques</h2>
+                <p>Listagem de estoques cadastrados.</p>
+                <hr />
+
+                <Loading IsLoading="@isLoading">
+
+                    <div class="mb-3">
+                        <strong class="text-success">@mensagemSucesso</strong>
+                        <strong class="text-danger">@mensagemErro</strong>
+                    </div>
+
+                    @if (estoques.Count > 0)
+                    {
+                        <div class="table-responsive">
+                            <table id="grid" class="table table-sm table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Nome do Estoque</th>
+                                        <th>Descrição</th>
+                                        <th>Data e Hora de Criação</th>
+                                        <th>Operações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var item in estoques)
+                                    {
+                                        <tr>
+                                            <td>@item.Nome</td>
+                                            <td>@item.Descricao</td>
+                                            <td>@item.DataHoraCriacao.ToString("dd/MM/yyyy")</td>
+                                            <td>
+                                                <NavLink class="btn btn-primary btn-sm" href="@OnEdit(item.Id.ToString())">
+                                                    <span class="oi oi-pencil" aria-hidden="true"></span>
+                                                </NavLink>
+                                                <button class="btn btn-danger btn-sm" @onclick="(() => OnDelete(item.Id.ToString()))">
+                                                    <span class="oi oi-trash" aria-hidden="true"></span>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <td colspan="6">
+                                            Quantidade de estoques: @estoques.Count
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    }
+                </Loading>
+                
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<EstoquesResponse> estoques = new List<EstoquesResponse>();
+    private bool isLoading = false;
+
+    private string? mensagemSucesso;
+    private string? mensagemErro;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Auth.Authorize(true);
+
+        isLoading = true;
+
+        var data = await Auth.GetData();
+        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", data.AccessToken);
+
+        var requestUri = Configuration["EstoqueApp"] + "/estoques";
+
+        var response = await Http.GetAsync(requestUri);
+        if(response.IsSuccessStatusCode)
+            estoques = await response.Content.ReadFromJsonAsync<List<EstoquesResponse>>();
+
+        isLoading = false;
+    }
+
+    private string OnEdit(string id)
+    {
+        return $"/admin/editar-estoques/{id}";
+    }
+
+    protected async Task OnDelete(string? id)
+    {
+        bool confirmed = await JsRuntime.InvokeAsync<bool>("confirm", "Deseja realmente excluir este estoque?");
+
+        if (confirmed)
+        {
+            isLoading = true;
+
+            var requestUri = Configuration["EstoqueApp"] + "/estoques";
+
+            var responseExclusao = await Http.DeleteAsync(requestUri + "/" + id.ToString());            
+            if (responseExclusao.IsSuccessStatusCode)
+            {
+                mensagemSucesso = "Estoque excluído com sucesso.";
+                await OnInitializedAsync();
+            }            
+
+            isLoading = false;
+        }
+    }
+}
