@@ -72,7 +72,7 @@ namespace BlazorApp.Web.Services
             //O Usuário está autenticado em uma página
             //em que ele não precisa de autenticação
             else if(isSigningIn && !isAuthenticated)
-                _navigationManager.NavigateTo("/admin/dashboard");
+                _navigationManager.NavigateTo("/admin/consultar-estoques");
         }
     }
 }

@@ -81,7 +81,7 @@
 
         var requestUri = Configuration["EstoqueApp"] + "/estoques";
 
-        var response = await Http.PostAsJsonAsync("Contas", request);
+        var response = await Http.PostAsJsonAsync(requestUri, request);
         if(response.IsSuccessStatusCode)
         {
             mensagemSucesso = "Estoque cadastrado com sucesso.";
